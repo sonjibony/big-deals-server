@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config();
 const port = process.env.PORT || 5000;
 
@@ -20,21 +20,31 @@ try{
 //collections
 const categoryCollection = client.db('bigDeal').collection('categories');
 const furnitureCollection = client.db('bigDeal').collection('furniture');
+const bookingsCollection = client.db('bigDeal').collection('bookings');
 
 //category api
 app.get('/category', async(req,res) => {
     const query = {};
     const category = await categoryCollection.find(query).toArray();
     res.send(category);
-})
+});
 
 //specific category load
 app.get('/category/:id', async(req, res) =>{
     const id = req.params.id;
     const query = {categoryNo:id};
     const furniture = await furnitureCollection.find(query).toArray();
+    const bookingQuery = {_id: ObjectId(_id)}
     res.send(furniture);
-   }) 
+   });
+
+   //booking posting in bd
+   app.post('/bookings', async(req,res) =>{
+    const booking = req.body;
+    // console.log(booking);
+    const result = await bookingsCollection.insertOne(booking);
+    res.send(result);
+   })
 
 }
 finally{
