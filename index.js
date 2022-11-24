@@ -21,6 +21,7 @@ try{
 const categoryCollection = client.db('bigDeal').collection('categories');
 const furnitureCollection = client.db('bigDeal').collection('furniture');
 const bookingsCollection = client.db('bigDeal').collection('bookings');
+const usersCollection = client.db('bigDeal').collection('users');
 
 //category api
 app.get('/category', async(req,res) => {
@@ -32,19 +33,59 @@ app.get('/category', async(req,res) => {
 //specific category load
 app.get('/category/:id', async(req, res) =>{
     const id = req.params.id;
+    console.log(req.body.name);
     const query = {categoryNo:id};
     const furniture = await furnitureCollection.find(query).toArray();
-    const bookingQuery = {_id: ObjectId(_id)}
+    // const bookingQuery = {_id: ObjectId(id)}
+    // const alreadyBooked = await bookingsCollection.find(bookingQuery).toArray();
     res.send(furniture);
    });
+
+//    //specific product
+//    app.get('/category/:id', async(req, res) =>{
+//     const id = req.params.id;
+//     // console.log(req.body.name);
+//     const query = {categoryNo:id};
+//     const furniture = await furnitureCollection.find(query).toArray();
+//     // const bookingQuery = {_id: ObjectId(id)}
+//     // const alreadyBooked = await bookingsCollection.find(bookingQuery).toArray();
+//     res.send(furniture);
+//    });
+
+//booking api
+app.get('/bookings', async(req,res) =>{
+    const email = req.query.email;
+    const query = {email: email};
+    const bookings = await bookingsCollection.find(query).toArray();
+    res.send(bookings);
+})
+
+
 
    //booking posting in bd
    app.post('/bookings', async(req,res) =>{
     const booking = req.body;
-    // console.log(booking);
+    console.log(booking);
+    const query ={
+        product: booking.product
+    }
+    const alreadyBooked = await bookingsCollection.find(query).toArray();
+
+    if(alreadyBooked.length){
+       const message = `Product is already booked` 
+       return res.send({acknowledge: false, message})
+    }
+
     const result = await bookingsCollection.insertOne(booking);
     res.send(result);
-   })
+   });
+
+   //users api inserted
+   app.post('/users', async(req,res) =>{
+    const user = req.body;
+    const result = await usersCollection.insertOne(user);
+    res.send(result);
+   });
 
 }
 finally{
