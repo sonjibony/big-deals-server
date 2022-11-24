@@ -19,6 +19,23 @@ async function run (){
 try{
 //collections
 const categoryCollection = client.db('bigDeal').collection('categories');
+const furnitureCollection = client.db('bigDeal').collection('furniture');
+
+//category api
+app.get('/category', async(req,res) => {
+    const query = {};
+    const category = await categoryCollection.find(query).toArray();
+    res.send(category);
+})
+
+//specific category load
+app.get('/category/:id', async(req, res) =>{
+    const id = req.params.id;
+    const query = {categoryNo:id};
+    const furniture = await furnitureCollection.find(query).toArray();
+    res.send(furniture);
+   }) 
+
 }
 finally{
 
