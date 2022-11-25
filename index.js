@@ -59,25 +59,32 @@ async function run() {
     });
 
     //specific category load
-    app.get("/category/:id", async (req, res) => {
-      const id = req.params.id;
-      // console.log(req.body.name);
-      const query = { categoryNo: id };
-      const furniture = await furnitureCollection.find(query).toArray();
+    // app.get("/category/:id", async (req, res) => {
+    //   const id = req.params.id;
+    //   // console.log(req.body.name);
+    //   const query = { categoryNo: id };
+    //   const furniture = await furnitureCollection.find(query).toArray();
 
-      res.send(furniture);
+      // res.send(furniture);
+    // });
+
+    //specific product
+    app.post("/furniture", async (req, res) => {
+      const furniture = req.body;
+      const result = await furnitureCollection.insertOne(furniture);
+      res.send(result);
     });
 
-    //    //specific product
-    //    app.get('/category/:id', async(req, res) =>{
-    //     const id = req.params.id;
-    //     // console.log(req.body.name);
-    //     const query = {categoryNo:id};
-    //     const furniture = await furnitureCollection.find(query).toArray();
-    //     // const bookingQuery = {_id: ObjectId(id)}
-    //     // const alreadyBooked = await bookingsCollection.find(bookingQuery).toArray();
-    //     res.send(furniture);
-    //    });
+       //specific product
+       app.get('/furniture/:category', async(req, res) =>{
+        const category = req.params.category;
+        // console.log(req.body.name);
+        const query = {category:category};
+        const furniture = await furnitureCollection.find(query).toArray();
+        // const bookingQuery = {_id: ObjectId(id)}
+        // const alreadyBooked = await bookingsCollection.find(bookingQuery).toArray();
+        res.send(furniture);
+       });
 
 
  //stripe
