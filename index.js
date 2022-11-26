@@ -67,9 +67,13 @@ async function run() {
 
     //specific product
     app.post("/furniture", async (req, res) => {
-      var myDate = new Date();
       const furniture = req.body;
-      const result = await furnitureCollection.insertOne(furniture);
+      const date_now = new Date();
+      const date = `${date_now.toLocaleDateString()},${date_now.toLocaleTimeString()}`;
+      const result = await furnitureCollection.insertOne({
+        ...furniture,
+        date,
+      });
       res.send(result);
     });
 
@@ -203,21 +207,29 @@ async function run() {
     //     res.send(result);
     // })
 
-    app.post("/payments", async (req, res) => {
+    app.post("/payments", verifyJWT, async (req, res) => {
       const payment = req.body;
+      const email = req?.decoded?.email;
       const result = await paymentsCollection.insertOne(payment);
-      const name = payment.product;
-      const filter = { name: name };
+      const product = payment.product;
+      const filter = { product, email };
       const updatedDoc = {
         $set: {
           paid: true,
           transactionId: payment.transactionId,
         },
       };
-      const updatedResult = await furnitureCollection.updateOne(
+      const { modifiedCount } = await bookingsCollection.updateOne(
         filter,
         updatedDoc
       );
+      console.log(payment?.product_id);
+      if (modifiedCount) {
+        const deleted = await furnitureCollection.deleteOne({
+          _id: ObjectId(payment?.product_id),
+        });
+        console.log(deleted);
+      }
       res.send(result);
     });
 
@@ -266,17 +278,8 @@ async function run() {
       }
       const query = { email: email };
       const bookings = await bookingsCollection.find(query).toArray();
-      const items_ids = bookings.map((ele) => ObjectId(ele._id));
-      const paid_items = await furnitureCollection.find({
-        _id: {
-          $in: items_ids,
-        },
-      });
-      // const result=bookings.map(ele=>{
-        
-      //   if(ele._id)
-      // })
-      // res.send(bookings);
+
+      res.send(bookings);
     });
 
     //specific booking
