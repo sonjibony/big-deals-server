@@ -5,9 +5,6 @@ require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
-
-
-
 const port = process.env.PORT || 5000;
 
 const app = express();
@@ -65,64 +62,182 @@ async function run() {
     //   const query = { categoryNo: id };
     //   const furniture = await furnitureCollection.find(query).toArray();
 
-      // res.send(furniture);
+    // res.send(furniture);
     // });
 
     //specific product
     app.post("/furniture", async (req, res) => {
+      var myDate = new Date();
       const furniture = req.body;
       const result = await furnitureCollection.insertOne(furniture);
       res.send(result);
     });
 
-       //specific product
-       app.get('/furniture/:category', async(req, res) =>{
-        const category = req.params.category;
-        // console.log(req.body.name);
-        const query = {category:category};
-        const furniture = await furnitureCollection.find(query).toArray();
-        // const bookingQuery = {_id: ObjectId(id)}
-        // const alreadyBooked = await bookingsCollection.find(bookingQuery).toArray();
-        res.send(furniture);
-       });
-
-
- //stripe
- app.post('/create-payment-intent', async(req,res) =>{
-    const booking = req.body;
-    const price = booking.price;
-    const amount = price * 100;
-
-    const paymentIntent = await stripe.paymentIntents.create({
-        currency: 'usd',
-        amount: amount,
-        "payment_method_types": [
-            "card"
-        ]
+    //specific product
+    app.get("/furniture/:category", async (req, res) => {
+      const category = req.params.category;
+      // console.log(req.body.name);
+      const query = { category: category };
+      const furniture = await furnitureCollection.find(query).toArray();
+      // const bookingQuery = {_id: ObjectId(id)}
+      // const alreadyBooked = await bookingsCollection.find(bookingQuery).toArray();
+      res.send(furniture);
     });
-    res.send({
+
+    //my products
+    app.get("/products", async (req, res) => {
+      const gmail = req.query.gmail;
+      // const decodedEmail = req.decoded.email;
+      // if (email !== decodedEmail) {
+      //   return res.status(403).send({ message: "forbidden access" });
+      // }
+      const query = { gmail: gmail };
+      const product = await furnitureCollection.find(query).toArray();
+      res.send(product);
+    });
+
+    //advertised products
+    app.get("/advertisedProducts", async (req, res) => {
+      const advertise = req.query.advertise;
+      // const decodedEmail = req.decoded.email;
+      // if (email !== decodedEmail) {
+      //   return res.status(403).send({ message: "forbidden access" });
+      // }
+      const query = { advertise: advertise };
+      const product = await furnitureCollection.find(query).toArray();
+      res.send(product);
+    });
+
+    app.put("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          advertise: "advertised",
+        },
+      };
+      const result = await furnitureCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    //deleting product
+    app.delete("/products/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const result = await furnitureCollection.deleteOne(filter);
+      res.send(result);
+    });
+
+    //reporting product
+    app.put("/products/:id", async (req, res) => {
+      // const decodedEmail = req.decoded.email;
+      // const query = { email: decodedEmail };
+      // const user = await usersCollection.findOne(query);
+      // if (user?.role !== "admin") {
+      //   return res.status(403).send({ message: "forbidden access" });
+      // }
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          report: "reported",
+        },
+      };
+      const result = await furnitureCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+      res.send(result);
+    });
+
+    //getting reported products
+    app.get("/reportedProducts", async (req, res) => {
+      const report = req.query.report;
+      // const decodedEmail = req.decoded.email;
+      // if (email !== decodedEmail) {
+      //   return res.status(403).send({ message: "forbidden access" });
+      // }
+      const query = { report: report };
+      const product = await furnitureCollection.find(query).toArray();
+      res.send(product);
+    });
+
+    //deleting reported product
+
+    //stripe
+    app.post("/create-payment-intent", async (req, res) => {
+      const booking = req.body;
+      const price = booking.price;
+      const amount = price * 100;
+
+      const paymentIntent = await stripe.paymentIntents.create({
+        currency: "usd",
+        amount: amount,
+        payment_method_types: ["card"],
+      });
+      res.send({
         clientSecret: paymentIntent.client_secret,
       });
- 
+    });
 
-});
+    //payment saving in db
+    // app.post('/payments', async(req,res) =>{
+    //     const payment = req.body;
+    //     const result = await paymentsCollection.insertOne(payment);
+    //     const id = payment.bookingId;
+    //     const filter = {_id: ObjectId(id)}
+    //     const updatedDoc = {
+    //         $set: {
+    //             paid: true,
+    //             transactionId: payment.transactionId
+    //         }
+    //     }
+    //     const updatedResult = await bookingsCollection.updateOne(filter, updatedDoc)
+    //     res.send(result);
+    // })
 
-//payment saving in db
-app.post('/payments', async(req,res) =>{
-    const payment = req.body;
-    const result = await paymentsCollection.insertOne(payment);
-    const id = payment.bookingId;
-    const filter = {_id: ObjectId(id)}
-    const updatedDoc = {
+    app.post("/payments", async (req, res) => {
+      const payment = req.body;
+      const result = await paymentsCollection.insertOne(payment);
+      const name = payment.product;
+      const filter = { name: name };
+      const updatedDoc = {
         $set: {
-            paid: true,
-            transactionId: payment.transactionId
-        }
-    }
-    const updatedResult = await bookingsCollection.updateOne(filter, updatedDoc)
-    res.send(result);
-})
+          paid: true,
+          transactionId: payment.transactionId,
+        },
+      };
+      const updatedResult = await furnitureCollection.updateOne(
+        filter,
+        updatedDoc
+      );
+      res.send(result);
+    });
 
+    // app.put("/products/:id",  async (req, res) => {
+
+    //   const id = req.params.id;
+    //   const filter = { _id: ObjectId(id) };
+    //   const options = { upsert: true };
+    //   const updatedDoc = {
+    //     $set: {
+    //       report: "reported",
+    //     },
+    //   };
+    //   const result = await furnitureCollection.updateOne(
+    //     filter,
+    //     updatedDoc,
+    //     options
+    //   );
+    //   res.send(result);
+    // });
 
     //jwt api
     app.get("/jwt", async (req, res) => {
@@ -130,7 +245,7 @@ app.post('/payments', async(req,res) =>{
       const query = { email: email };
       const user = await usersCollection.findOne(query);
 
-      if(!email) return res.status(403).send({ accessToken: "" });
+      if (!email) return res.status(403).send({ accessToken: "" });
 
       if (user) {
         const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
@@ -142,7 +257,7 @@ app.post('/payments', async(req,res) =>{
       res.status(403).send({ accessToken: "" });
     });
 
-    //booking api
+    //my bookings
     app.get("/bookings", verifyJWT, async (req, res) => {
       const email = req.query.email;
       const decodedEmail = req.decoded.email;
@@ -151,24 +266,34 @@ app.post('/payments', async(req,res) =>{
       }
       const query = { email: email };
       const bookings = await bookingsCollection.find(query).toArray();
-      res.send(bookings);
+      const items_ids = bookings.map((ele) => ObjectId(ele._id));
+      const paid_items = await furnitureCollection.find({
+        _id: {
+          $in: items_ids,
+        },
+      });
+      // const result=bookings.map(ele=>{
+        
+      //   if(ele._id)
+      // })
+      // res.send(bookings);
     });
 
     //specific booking
-    app.get('/bookings/:id', async(req, res) =>{
-        const id = req.params.id;
-        const query = {_id: ObjectId(id)};
-        const booking = await bookingsCollection.findOne(query);
-        res.send(booking);
-       }) 
+    app.get("/bookings/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const booking = await bookingsCollection.findOne(query);
+      res.send(booking);
+    });
 
-    //booking posting in bd
+    //booking posting in DB
     app.post("/bookings", async (req, res) => {
       const booking = req.body;
       // console.log(booking);
       const query = {
         product: booking.product,
-        email: booking.email
+        email: booking.email,
       };
       const alreadyBooked = await bookingsCollection.find(query).toArray();
 
@@ -209,16 +334,39 @@ app.post('/payments', async(req,res) =>{
       res.send(users);
     });
 
+    app.get("/booked", async (req, res) => {
+      let query = {};
+      if (req?.query?.paid) {
+        query = {
+          paid: true,
+        };
+
+        // const paid = req.query.paid
+        // const query = {paid: paid };
+      }
+      const allBookings = await bookingsCollection.find(query).toArray();
+      res.send(allBookings);
+    });
+
+    app.get("/allBookings", async (req, res) => {
+      // const paid = req.query.paid
+      const query = {};
+      const allBookings = await bookingsCollection.find(query).toArray();
+      res.send(allBookings);
+    });
+
     //users api inserted
     app.post("/users", async (req, res) => {
       const user = req.body;
       // console.log(req.body);
-      const old_data=await usersCollection.findOne({email:req?.body?.email});
-      if(!!old_data?.email){
+      const old_data = await usersCollection.findOne({
+        email: req?.body?.email,
+      });
+      if (!!old_data?.email) {
         res.status(200).send(old_data);
-      }else{
-          const result = await usersCollection.insertOne(user);
-          res.status(200).send(result);
+      } else {
+        const result = await usersCollection.insertOne(user);
+        res.status(200).send(result);
       }
     });
 
